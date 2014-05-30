@@ -20,41 +20,42 @@ import (
 )
 
 type Fetcher struct {
-	Url, Method           string
 	Params, Header, Files map[string]string
 }
 
-func (f Fetcher) Execute() (result string, err error) {
+func (f Fetcher) Fetch(url, method string) (result string, err error) {
 
 	var reqBody io.Reader
 	var contentType string
 
 	// check if post and add post params
-	if f.Method == "POST" {
+	if method == "POST" {
 		reqBody, contentType, err = f.createPostBody()
 		if err != nil {
 			return "", err
 		}
+	} else {
+		method = "GET"
 	}
 
 	// build request object
 	client := &http.Client{}
-	req, err := http.NewRequest(f.Method, f.Url, reqBody)
+	request, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
 		return "", err
 	}
 
-	if f.Method == "POST" {
-		req.Header.Add("Content-Type", contentType)
+	if method == "POST" {
+		request.Header.Add("Content-Type", contentType)
 	}
 
-	// add header objects
+	// add header values
 	for k, v := range f.Header {
-		req.Header.Add(k, v)
+		request.Header.Add(k, v)
 	}
 
 	// execute request object
-	res, err := client.Do(req)
+	res, err := client.Do(request)
 	if err != nil {
 		return "", err
 	}
@@ -77,6 +78,7 @@ func NewFetcher() (f Fetcher) {
 	return f
 }
 
+// create body for post - includes files, params
 func (f Fetcher) createPostBody() (body io.Reader, contentType string, err error) {
 
 	var b bytes.Buffer
@@ -110,6 +112,7 @@ func (f Fetcher) createPostBody() (body io.Reader, contentType string, err error
 		return
 	}
 
+	// content type might be different due to file uploads
 	contentType = writer.FormDataContentType()
 	body = &b
 	return body, contentType, nil
