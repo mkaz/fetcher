@@ -1,11 +1,10 @@
-/*
- * fetcher.go - http request helper
- * https://github.com/mkaz/fetcher
- *
- * A library to make it a bit easier to do HTTP fetches
- * Includes adding headers, post forms, params
- *
- */
+// fetcher.go - http request helper
+// https://github.com/mkaz/fetcher
+//
+// A library to make it a bit easier to do HTTP fetches
+// supports adding headers, posting forms, parameters
+// and uploading files
+//
 
 package fetcher
 
@@ -23,6 +22,15 @@ type Fetcher struct {
 	Params, Header, Files map[string]string
 }
 
+// NewFetcher creates a fetcher request instance
+func NewFetcher() (f Fetcher) {
+	f.Params = map[string]string{}
+	f.Header = map[string]string{}
+	f.Files = map[string]string{}
+	return f
+}
+
+// Fetch executes the fetcher request
 func (f Fetcher) Fetch(url, method string) (result string, err error) {
 
 	var reqBody io.Reader
@@ -45,16 +53,18 @@ func (f Fetcher) Fetch(url, method string) (result string, err error) {
 		return "", err
 	}
 
+	// need to add header to request for content-type
+	// this sets boundaries and builds proper header type
 	if method == "POST" {
 		request.Header.Add("Content-Type", contentType)
 	}
 
-	// add header values
+	// add additional user header values
 	for k, v := range f.Header {
 		request.Header.Add(k, v)
 	}
 
-	// execute request object
+	// execute request
 	res, err := client.Do(request)
 	if err != nil {
 		return "", err
@@ -69,13 +79,6 @@ func (f Fetcher) Fetch(url, method string) (result string, err error) {
 
 	result = string(body)
 	return
-}
-
-func NewFetcher() (f Fetcher) {
-	f.Params = map[string]string{}
-	f.Header = map[string]string{}
-	f.Files = map[string]string{}
-	return f
 }
 
 // create body for post - includes files, params
@@ -101,12 +104,12 @@ func (f Fetcher) createPostBody() (body io.Reader, contentType string, err error
 			return nil, "", err
 		}
 	}
-	
+
 	// add parameters if there are parameters
 	for k, v := range f.Params {
 		_ = writer.WriteField(k, v)
 	}
-	
+
 	err = writer.Close()
 	if err != nil {
 		return
