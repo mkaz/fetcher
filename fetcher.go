@@ -87,6 +87,12 @@ func (f Fetcher) createPostBody() (body io.Reader, contentType string, err error
 	var b bytes.Buffer
 	writer := multipart.NewWriter(&b)
 
+	// add parameters first if there are parameters
+    // Amazon doesn't like params after File
+	for k, v := range f.Params {
+		_ = writer.WriteField(k, v)
+	}
+
 	// add files if we are uploading a file
 	for k, v := range f.Files {
 		file, err := os.Open(v)
@@ -105,10 +111,6 @@ func (f Fetcher) createPostBody() (body io.Reader, contentType string, err error
 		}
 	}
 
-	// add parameters if there are parameters
-	for k, v := range f.Params {
-		_ = writer.WriteField(k, v)
-	}
 
 	err = writer.Close()
 	if err != nil {
