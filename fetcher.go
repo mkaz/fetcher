@@ -37,7 +37,7 @@ func (f Fetcher) Fetch(url, method string) (result string, err error) {
 	var contentType string
 
 	// check if post and add post params
-	if method == "POST" {
+	if method == "POST" || method == "PATCH" {
 		reqBody, contentType, err = f.createPostBody()
 		if err != nil {
 			return "", err
