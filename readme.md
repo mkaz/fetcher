@@ -1,11 +1,11 @@
 
 # fetcher.go
 
-Marcus Kazmierczak, [@mkaz](https://twitter.com/mkaz)
+Marcus Kazmierczak, [mkaz.com](https://mkaz.com)
 
 A client library to help make HTTP requests a little easier in Go.
 
-In general basic requests aren't too bad using the `net/http` library. A little extra boilerplate just to get the results, but workable. However, when testing a REST API which required setting headers, uploading images and creating more complex requests, the basic `net/http` package becomes a bit challenging and verbose.
+In general basic requests aren't too bad using the `net/http` library. I built this library to help with testing a REST API which required setting headers, uploading images and creating more complex requests, the basic `net/http` package becomes a bit challenging and verbose.
 
 
 ## Install
@@ -39,8 +39,8 @@ Example using fetcher to POST params to a form
 
 ```go
 f := fetcher.NewFetcher()
-f.Params["foo"] = "bar"
-f.Params["baz"] = "foz"
+f.Params.Add("foo", "bar")
+f.Params.Add("bazza", "fozza")
 result, err := f.Fetch("/post-form", "POST")
 if err != nil {
     fmt.Println("Error Fetching:", err)
@@ -54,8 +54,8 @@ Example using fetcher to upload files, set parameters and header variable
 
 ```go
 f := fetcher.NewFetcher()
-f.Params["foo"] = "bar"
-f.Params["baz"] = "foz"
+f.Params("foo", "bar")
+f.Params("baz", "foz")
 f.Files["filedata"] = "/home/mkaz/tmp/upload.jpg"
 f.Header["X-Auth"] = "my-secret-token"
 result, err := f.Fetch("/upload-file", "POST")
@@ -68,4 +68,3 @@ fmt.Println(result)
 ## License
 
 This software is licensed under the MIT License.
-

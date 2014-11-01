@@ -14,17 +14,19 @@ import (
 	"io/ioutil"
 	"mime/multipart"
 	"net/http"
+	"net/url"
 	"os"
 	"path/filepath"
 )
 
 type Fetcher struct {
-	Params, Header, Files map[string]string
+	Params url.Values
+	Header, Files map[string]string
 }
 
 // NewFetcher creates a fetcher request instance
 func NewFetcher() (f Fetcher) {
-	f.Params = map[string]string{}
+	f.Params = make(url.Values)
 	f.Header = map[string]string{}
 	f.Files = map[string]string{}
 	return f
@@ -44,6 +46,8 @@ func (f Fetcher) Fetch(url, method string) (result string, err error) {
 		}
 	} else {
 		method = "GET"
+		url = url + "?" + f.Params.Encode();
+
 	}
 
 	// build request object
@@ -89,8 +93,9 @@ func (f Fetcher) createPostBody() (body io.Reader, contentType string, err error
 
 	// add parameters first if there are parameters
     // Amazon doesn't like params after File
-	for k, v := range f.Params {
-		_ = writer.WriteField(k, v)
+	// TODO: support multiple values for single parameter
+	for k, _ := range f.Params {
+		_ = writer.WriteField(k, f.Params.Get(k))
 	}
 
 	// add files if we are uploading a file
