@@ -20,7 +20,7 @@ import (
 )
 
 type Fetcher struct {
-	Params url.Values
+	Params        url.Values
 	Header, Files map[string]string
 }
 
@@ -32,8 +32,15 @@ func NewFetcher() (f Fetcher) {
 	return f
 }
 
-// Fetch executes the fetcher request
+// default Fetch returned results as a string
 func (f Fetcher) Fetch(url, method string) (result string, err error) {
+	bytes, err := f.FetchBytes(url, method)
+	return string(bytes), err
+}
+
+// Return results as byte array
+// Useful for unmarshaling json, so don't need to cast back to a byte array
+func (f Fetcher) FetchBytes(url, method string) (result []byte, err error) {
 
 	var reqBody io.Reader
 	var contentType string
@@ -42,11 +49,11 @@ func (f Fetcher) Fetch(url, method string) (result string, err error) {
 	if method == "POST" || method == "PATCH" {
 		reqBody, contentType, err = f.createPostBody()
 		if err != nil {
-			return "", err
+			return
 		}
 	} else {
 		method = "GET"
-		url = url + "?" + f.Params.Encode();
+		url = url + "?" + f.Params.Encode()
 
 	}
 
@@ -54,7 +61,7 @@ func (f Fetcher) Fetch(url, method string) (result string, err error) {
 	client := &http.Client{}
 	request, err := http.NewRequest(method, url, reqBody)
 	if err != nil {
-		return "", err
+		return
 	}
 
 	// need to add header to request for content-type
@@ -71,17 +78,16 @@ func (f Fetcher) Fetch(url, method string) (result string, err error) {
 	// execute request
 	res, err := client.Do(request)
 	if err != nil {
-		return "", err
+		return
 	}
 
 	// process response
 	defer res.Body.Close()
-	body, err := ioutil.ReadAll(res.Body)
+	result, err = ioutil.ReadAll(res.Body)
 	if err != nil {
-		return "", err
+		return
 	}
 
-	result = string(body)
 	return
 }
 
@@ -92,7 +98,7 @@ func (f Fetcher) createPostBody() (body io.Reader, contentType string, err error
 	writer := multipart.NewWriter(&b)
 
 	// add parameters first if there are parameters
-    // Amazon doesn't like params after File
+	// Amazon doesn't like params after File
 	// TODO: support multiple values for single parameter
 	for k, _ := range f.Params {
 		_ = writer.WriteField(k, f.Params.Get(k))
@@ -115,7 +121,6 @@ func (f Fetcher) createPostBody() (body io.Reader, contentType string, err error
 			return nil, "", err
 		}
 	}
-
 
 	err = writer.Close()
 	if err != nil {
