@@ -10,6 +10,7 @@ package fetcher
 
 import (
 	"bytes"
+	"encoding/json"
 	"io"
 	"io/ioutil"
 	"mime/multipart"
@@ -22,6 +23,7 @@ import (
 type Fetcher struct {
 	Params        url.Values
 	Header, Files map[string]string
+	Data          map[string]interface{}
 }
 
 // NewFetcher creates a fetcher request instance
@@ -32,10 +34,46 @@ func NewFetcher() (f Fetcher) {
 	return f
 }
 
+type Response struct {
+	StatusCode int
+	BodyText   []byte
+	Header     http.Header
+}
+
 // default Fetch returned results as a string
 func (f Fetcher) Fetch(url, method string) (result string, err error) {
 	bytes, err := f.FetchBytes(url, method)
 	return string(bytes), err
+}
+
+func (f Fetcher) JsonRequest(url, method string) (resp Response, err error) {
+
+	jsonStr, err := json.Marshal(f.Data)
+	if err != nil {
+		return resp, err
+	}
+
+	request, err := http.NewRequest(method, url, bytes.NewBuffer(jsonStr))
+
+	// add additional user header values
+	for k, v := range f.Header {
+		request.Header.Add(k, v)
+	}
+
+	// add in application/json header
+	request.Header.Set("Content-Type", "application/json")
+
+	client := &http.Client{}
+	rs, err := client.Do(request)
+	if err != nil {
+		return resp, err
+	}
+	defer rs.Body.Close()
+
+	resp.StatusCode = rs.StatusCode
+	resp.Header = rs.Header
+	resp.BodyText, _ = ioutil.ReadAll(rs.Body)
+	return resp, nil
 }
 
 // Return results as byte array
